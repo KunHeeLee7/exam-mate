@@ -1,4 +1,5 @@
 import re
+from services.question_profile import reference_profile
 from services.statistics import summary, question_stats
 
 TOOLS = [{"type":"function","function":{"name":"lookup_exam","description":"채점 데이터 조회. overview는 전체 통계, student는 특정 학생, question은 문항과 공유 지문, hardest는 최다오답 문항 및 원문을 반환한다.","parameters":{"type":"object","properties":{"kind":{"type":"string","enum":["overview","student","question","hardest"]},"identifier":{"type":"string","description":"학생 식별자 또는 문항 번호. 전체 통계는 빈 문자열."}},"required":["kind","identifier"],"additionalProperties":False},"strict":True}}]
@@ -27,6 +28,6 @@ def lookup(result, kind, identifier=""):
             except ValueError: return {"error":"문항 번호는 정수여야 합니다."}
         if n not in result.exam.questions:
             return {"error":"문항이 없습니다."}
-        return {"문항":result.exam.questions[n],"정답정보":result.exam.answers[n],
+        return {"문항":result.exam.questions[n],"정답정보":result.exam.answers[n],"생성참고기준":reference_profile(result.exam.questions[n]),
                 "오답수":int((~result.correct[n]).sum()),"최다오답동률문항":stats["최다오답문항"] if kind=="hardest" else []}
     return {"error":"지원되지 않는 조회입니다."}

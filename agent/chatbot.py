@@ -3,6 +3,7 @@ import re
 import time
 from openai import OpenAI
 from agent.prompts import SYSTEM
+from agent.question_generator import generate
 from agent.tools import TOOLS, lookup
 
 def answer(result, history, api_key, model):
@@ -19,16 +20,21 @@ def answer(result, history, api_key, model):
         if remaining < 1:
             raise TimeoutError("응답 제한 시간을 초과했습니다.")
         response = client.chat.completions.create(model=model,messages=messages,tools=TOOLS,
-                    max_completion_tokens=1800,timeout=remaining)
+                    max_completion_tokens=2600,timeout=remaining)
         message=response.choices[0].message
         if not message.tool_calls:
             return message.content or "답변을 생성하지 못했습니다. 질문을 다시 입력해주세요."
         messages.append(message.model_dump(exclude_none=True))
+        generation_reference = None
         for call in message.tool_calls:
             try:
                 args=json.loads(call.function.arguments)
                 value=lookup(result,**args) if call.function.name=="lookup_exam" else {"error":"허용되지 않는 요청"}
             except (TypeError, ValueError, KeyError):
                 value={"error":"조회 요청 형식이 올바르지 않습니다."}
+            if isinstance(value, dict) and "문항" in value:
+                generation_reference = value
             messages.append({"role":"tool","tool_call_id":call.id,"content":json.dumps(value,ensure_ascii=False)})
+        if generation_reference and re.search(r"만들|생성|출제|유사|비슷", prompt):
+            return generate(client, model, generation_reference, prompt, deadline)
     return "질문을 처리하지 못했습니다. 학생 번호나 문항 번호를 포함해 다시 질문해주세요."

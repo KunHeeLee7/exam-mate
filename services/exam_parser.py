@@ -20,7 +20,7 @@ def parse_answers(data):
     for m in re.finditer(r"(\d(?:\s*\d)?)\s*([①②③④⑤])\s*([23])", text):
         number = int(re.sub(r"\s", "", m[1]))
         if number in answers:
-            raise ValueError("정답표에 중복 문항이 있습니다. 홀수형 정답표 하나를 업로드해주세요.")
+            raise ValueError("정답표에 중복 문항이 있습니다. 한 가지 유형의 정답표 하나를 업로드해주세요.")
         answers[number] = {"answer": CIRCLED[m[2]], "points": int(m[3])}
     if set(answers) != set(range(1, 46)) or sum(x["points"] for x in answers.values()) != 100:
         raise ValueError("정답표에서 45문항·총 100점을 확인하지 못했습니다. 정답 PDF 형식을 확인해주세요.")
