@@ -8,9 +8,17 @@ from services.statistics import summary, question_stats
 from services.excel_export import export_excel
 from agent.chatbot import answer
 
-st.title("시험 분석")
+st.markdown("""
+<section class="exam-hero compact">
+  <div class="exam-eyebrow">EXAM MATE · ANALYSIS</div>
+  <h1>시험 분석</h1>
+  <p>자료 업로드 → 자동 채점 → 성적 확인과 연습문제 생성</p>
+</section>
+""", unsafe_allow_html=True)
 with st.sidebar:
+    st.caption("STEP 01 · 시험 자료 준비")
     st.subheader("시험 자료 업로드")
+    st.caption("같은 시험의 파일 3개를 준비해주세요.")
     question=st.file_uploader("문제지 PDF",type=["pdf"],key="questions")
     key=st.file_uploader("정답·배점 PDF",type=["pdf"],key="answers")
     omr=st.file_uploader("학생 OMR 결과 Excel",type=["xlsx"],key="omr")
@@ -30,7 +38,10 @@ with st.sidebar:
             st.success("채점이 완료됐습니다.")
         except Exception as exc:
             st.error(str(exc) if isinstance(exc,ValueError) else "파일을 처리하지 못했습니다. 파일이 손상되지 않았는지 확인해주세요.")
-    st.download_button("결과 Excel 다운로드",data=st.session_state.excel or b"",file_name="exam-mate-results.xlsx",
+    st.caption("분석에는 약 20초까지 소요될 수 있습니다. 파일 크기에 따라 더 걸릴 수 있어요.")
+    # 결과 데이터에서 현재 내보내기 코드로 재생성해, 세션에 남은 이전 Excel을 재사용하지 않는다.
+    download_data = export_excel(st.session_state.result) if st.session_state.result is not None else b""
+    st.download_button("결과 Excel 다운로드",data=download_data,file_name="exam-mate-results.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",disabled=st.session_state.result is None,use_container_width=True)
 
 result=st.session_state.result

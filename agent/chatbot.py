@@ -14,13 +14,14 @@ def answer(result, history, api_key, model):
         return "채팅을 사용하려면 서버에 OPENAI_API_KEY를 설정해주세요. 채점과 Excel 다운로드는 이용할 수 있습니다."
     client = OpenAI(api_key=api_key, max_retries=0)
     messages = [{"role":"system","content":SYSTEM}] + [{"role":m["role"],"content":m["content"]} for m in history]
+    generation_requested = bool(re.search(r"문제|지문|연습|question|passage", prompt, re.I) and re.search(r"만들|생성|출제|유사|비슷|generate|create", prompt, re.I))
     deadline = time.monotonic()+18
     for _ in range(3):
         remaining = deadline-time.monotonic()
         if remaining < 1:
             raise TimeoutError("응답 제한 시간을 초과했습니다.")
         response = client.chat.completions.create(model=model,messages=messages,tools=TOOLS,
-                    max_completion_tokens=2600,timeout=remaining)
+                    max_completion_tokens=2600,timeout=remaining,tool_choice="required" if generation_requested else "auto")
         message=response.choices[0].message
         if not message.tool_calls:
             return message.content or "답변을 생성하지 못했습니다. 질문을 다시 입력해주세요."
@@ -35,6 +36,6 @@ def answer(result, history, api_key, model):
             if isinstance(value, dict) and "문항" in value:
                 generation_reference = value
             messages.append({"role":"tool","tool_call_id":call.id,"content":json.dumps(value,ensure_ascii=False)})
-        if generation_reference and re.search(r"만들|생성|출제|유사|비슷", prompt):
+        if generation_reference and (generation_requested or re.search(r"만들|생성|출제|유사|비슷", prompt)):
             return generate(client, model, generation_reference, prompt, deadline)
     return "질문을 처리하지 못했습니다. 학생 번호나 문항 번호를 포함해 다시 질문해주세요."
