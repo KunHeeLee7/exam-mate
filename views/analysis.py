@@ -57,7 +57,13 @@ st.caption("표준편차는 업로드된 전체 학생을 모집단으로 계산
 with st.expander("학생별 점수와 문항별 분석 보기"):
     st.dataframe(result.scores.reset_index(),hide_index=True,use_container_width=True)
     st.dataframe(question_stats(result).sort_values(["오답수","문항"],ascending=[False,True]),hide_index=True,use_container_width=True)
-st.subheader("시험 결과에 대해 물어보세요")
+chat_title, chat_action = st.columns([4, 1])
+with chat_title:
+    st.subheader("시험 결과에 대해 물어보세요")
+with chat_action:
+    if st.button("새 대화 시작", key="new_conversation", help="채점 결과와 업로드 파일은 유지하고 대화 기록만 지웁니다.", use_container_width=True):
+        st.session_state.messages = []
+        st.rerun()
 st.caption("예: 평균과 중앙값은? · 가장 성적이 낮은 학생은? · 가장 많이 틀린 유형의 문제를 만들어줘")
 for m in st.session_state.messages:
     with st.chat_message(m["role"]): st.markdown(m["content"])

@@ -19,8 +19,8 @@ def export_excel(result):
         first["A1"].fill = PatternFill("solid", fgColor="DBEAFE")
         first["A1"].alignment = Alignment(wrap_text=True, vertical="center")
         first.row_dimensions[1].height = 36
-        for col, name in zip(["A", "C", "E"], ["학생별 채점 결과", "문항별 분석", "학생 응답"]):
-            cell = first[f"{col}2"]
+        for row, name in zip([2, 4, 6], ["학생별 채점 결과", "문항별 분석", "학생 응답"]):
+            cell = first[f"E{row}"]
             cell.value = name + " →"
             cell.hyperlink = "#'" + name + "'!A1"
             cell.font = Font(color="2563EB", underline="single")

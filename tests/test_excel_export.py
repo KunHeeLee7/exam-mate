@@ -15,6 +15,6 @@ class ExcelGuideTests(unittest.TestCase):
         first=book.worksheets[0]
         self.assertIn("아래 시트 탭",first["A1"].value)
         self.assertEqual(first["A4"].value,"항목")
-        for col,name in zip(["A","C","E"],book.sheetnames[1:]):
-            self.assertEqual(first[f"{col}2"].hyperlink.target,f"#'{name}'!A1")
+        for row,name in zip([2,4,6],book.sheetnames[1:]):
+            self.assertEqual(first[f"E{row}"].hyperlink.target,f"#'{name}'!A1")
         self.assertEqual(book["학생별 채점 결과"]["B2"].value,2)
