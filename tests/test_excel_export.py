@@ -15,6 +15,11 @@ class ExcelGuideTests(unittest.TestCase):
         first=book.worksheets[0]
         self.assertIn("아래 시트 탭",first["A1"].value)
         self.assertEqual(first["A4"].value,"항목")
+        labels = [c.value for c in first["A"]]
+        self.assertNotIn("최저점학생", labels)
+        self.assertNotIn("최고점학생", labels)
+        self.assertIn("최저점", labels)
+        self.assertIn("최고점", labels)
         for row,name in zip([2,4,6],book.sheetnames[1:]):
             self.assertEqual(first[f"E{row}"].hyperlink.target,f"#'{name}'!A1")
         self.assertEqual(book["학생별 채점 결과"]["B2"].value,2)

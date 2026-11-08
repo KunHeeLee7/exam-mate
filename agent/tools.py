@@ -1,14 +1,24 @@
 import re
+from services.data_queries import score_records, student_response_records, question_analysis
 from services.student_analysis import analyze_student
 from services.question_profile import reference_profile
 from services.statistics import summary, question_stats, wrong_answer_ranking
 
-TOOLS = [{"type":"function","function":{"name":"lookup_exam","description":"채점 데이터 조회. overview는 전체 통계, student는 특정 학생 점수, student_analysis는 성적이 저조한 이유·약점·학습 조언을 위한 유형별 오답 분석, question은 문항과 공유 지문, hardest는 1번째 최다오답 문항만 반환한다. 두 번째, 세 번째, N번째, 상위 목록 등 오답 순위 질문에는 반드시 ranked를 사용한다. ranked는 전체 순위와 identifier에 지정한 순번의 문항 원문을 반환한다.","parameters":{"type":"object","properties":{"kind":{"type":"string","enum":["overview","student","student_analysis","question","hardest","ranked"]},"identifier":{"type":"string","description":"학생 식별자 또는 문항 번호. ranked일 때는 요청 순번을 숫자 문자열로 전달(예: 두 번째는 2). 전체 순위 목록은 빈 문자열. 전체 통계는 빈 문자열."}},"required":["kind","identifier"],"additionalProperties":False},"strict":True}}]
+TOOLS = [{"type":"function","function":{"name":"lookup_exam","description":"채점 데이터 조회. overview는 전체 통계와 최고·최저점/동점 학생, scores는 학생별 채점 결과 전체 목록과 순위, question_analysis는 문항별 정답률/오답률/응답분포(빈 identifier는 전체, 숫자는 문항), student_responses는 지정 학생의 전 문항 선택 응답/정답/정오/배점, student는 특정 학생 점수, student_analysis는 성적이 저조한 이유·약점·학습 조언을 위한 유형별 오답 분석, question은 문항과 공유 지문, hardest는 1번째 최다오답 문항만 반환한다. 두 번째, 세 번째, N번째, 상위 목록 등 오답 순위 질문에는 반드시 ranked를 사용한다. ranked는 전체 순위와 identifier에 지정한 순번의 문항 원문을 반환한다.","parameters":{"type":"object","properties":{"kind":{"type":"string","enum":["overview","scores","student","student_analysis","student_responses","question_analysis","question","hardest","ranked"]},"identifier":{"type":"string","description":"학생 식별자 또는 문항 번호. ranked일 때는 요청 순번을 숫자 문자열로 전달(예: 두 번째는 2). 전체 순위 목록은 빈 문자열. 전체 통계는 빈 문자열."}},"required":["kind","identifier"],"additionalProperties":False},"strict":True}}]
 
 def lookup(result, kind, identifier=""):
     if kind == "overview":
         return summary(result)
-    if kind in ("student", "student_analysis"):
+    if kind == "scores":
+        return {"출처":"학생별 채점 결과", "학생수":len(result.scores), "학생별결과":score_records(result)}
+    if kind == "question_analysis":
+        try:
+            n=int(identifier) if identifier else None
+        except ValueError:
+            return {"error":"문항 번호를 정수로 지정해주세요."}
+        rows=question_analysis(result,n)
+        return {"출처":"문항별 분석 및 학생 응답", "문항별결과":rows} if rows else {"error":"문항이 없습니다."}
+    if kind in ("student", "student_analysis", "student_responses"):
         if identifier in result.scores.index:
             ids = [identifier]
         else:
@@ -17,6 +27,8 @@ def lookup(result, kind, identifier=""):
         if len(ids)!=1:
             return {"error":"학생을 유일하게 찾을 수 없습니다. 정확한 학생 식별자를 확인해주세요."}
         student = ids[0]
+        if kind == "student_responses":
+            return {"출처":"학생 응답 및 학생별 채점 결과", "학생":student,"점수":int(result.scores.loc[student]),"문항별응답":student_response_records(result,student)}
         if kind == "student_analysis":
             return analyze_student(result, student)
         return {"학생":student,"점수":int(result.scores.loc[student]),"오답문항":[int(n) for n in result.correct.columns[~result.correct.loc[student]]]}
@@ -48,5 +60,5 @@ def lookup(result, kind, identifier=""):
         if n not in result.exam.questions:
             return {"error":"문항이 없습니다."}
         return {"문항":result.exam.questions[n],"정답정보":result.exam.answers[n],"생성참고기준":reference_profile(result.exam.questions[n]),
-                "오답수":int((~result.correct[n]).sum()),"최다오답동률문항":stats["최다오답문항"] if kind=="hardest" else []}
+                "문항별분석":question_analysis(result,n)[0],"오답수":int((~result.correct[n]).sum()),"최다오답동률문항":stats["최다오답문항"] if kind=="hardest" else []}
     return {"error":"지원되지 않는 조회입니다."}

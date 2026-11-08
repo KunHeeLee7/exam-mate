@@ -6,7 +6,7 @@ from services.statistics import summary, question_stats
 
 def export_excel(result):
     output = BytesIO()
-    stats = summary(result)
+    stats = {key: value for key, value in summary(result).items() if key not in {"최저점학생", "최고점학생"}}
     overview = pd.DataFrame({"항목": list(stats), "값": [", ".join(map(str,v)) if isinstance(v,list) else v for v in stats.values()]})
     details = result.correct.rename(columns=lambda n:f"Q{n:02d}").replace({True:"O",False:"X"})
     details.insert(0, "점수", result.scores)
