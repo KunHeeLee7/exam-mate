@@ -3,7 +3,7 @@
 수능 영어 문제지, 정답표, 학생 OMR 응답을 업로드해 채점하고 성적을 분석하는 웹서비스입니다.
 
 - 학번 및 이름: 202234914 이건희
-- 배포 URL: 배포 후 기입
+- 배포 URL: https://kunheelee7-exam-mate.streamlit.app/
 
 ## 실행
 
